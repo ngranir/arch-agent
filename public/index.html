@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Arch Agent — Cloud Diagram Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy-950:#060d1f;--navy-900:#0b1528;--navy-800:#0f1e38;--navy-700:#162544;
+  --navy-600:#1e3257;--slate-400:#94a3b8;--slate-300:#cbd5e1;--slate-200:#e2e8f0;
+  --accent:#3b82f6;--accent-lo:#1d4ed8;--accent-hi:#60a5fa;
+  --teal:#14b8a6;--amber:#f59e0b;--rose:#f43f5e;--green:#22c55e;
+  --border:rgba(59,130,246,.13);--border-md:rgba(59,130,246,.25);
+}
+html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;background:var(--navy-950);color:var(--slate-200)}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(59,130,246,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+
+/* ── NAV ── */
+.topnav{position:relative;z-index:10;height:52px;background:var(--navy-900);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 18px;gap:16px;flex-shrink:0}
+.logo{display:flex;align-items:center;gap:9px}
+.logo-icon{width:30px;height:30px;background:linear-gradient(135deg,var(--accent-lo),var(--accent));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 0 14px rgba(59,130,246,.35)}
+.logo-text{font-size:16px;font-weight:600;color:var(--slate-100)}
+.logo-text span{color:var(--accent-hi)}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.badge{font-family:'DM Mono',monospace;font-size:10px;padding:2px 7px;border-radius:4px;background:rgba(20,184,166,.1);border:1px solid rgba(20,184,166,.25);color:var(--teal);letter-spacing:.4px}
+
+/* ── LAYOUT ── */
+.layout{display:flex;flex:1;overflow:hidden;position:relative;z-index:1}
+
+/* ── SIDEBAR ── */
+.sidebar{width:220px;background:var(--navy-900);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
+.sb-section{padding:14px 12px 8px}
+.sb-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.4px;color:var(--slate-400);text-transform:uppercase;margin-bottom:7px;padding:0 3px}
+.new-btn{width:100%;padding:8px 11px;background:linear-gradient(135deg,var(--accent-lo),var(--accent));border:none;border-radius:7px;color:#fff;font-size:12px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:7px;margin-bottom:14px;box-shadow:0 2px 10px rgba(59,130,246,.28)}
+.new-btn:hover{opacity:.9}
+.prov-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:6px}
+.prov-btn{padding:6px 8px;border-radius:6px;font-size:11px;font-weight:500;text-align:center;cursor:pointer;border:1px solid;transition:all .18s;font-family:'DM Sans',sans-serif}
+.prov-btn.aws{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.2);color:var(--amber)}
+.prov-btn.gcp{background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.2);color:var(--accent-hi)}
+.prov-btn.azure{background:rgba(20,184,166,.08);border-color:rgba(20,184,166,.2);color:var(--teal)}
+.prov-btn.auto{background:rgba(139,92,246,.08);border-color:rgba(139,92,246,.2);color:#a78bfa;grid-column:1/-1}
+.prov-btn.active{filter:brightness(1.4);box-shadow:0 0 0 1px currentColor inset}
+.sb-divider{height:1px;background:var(--border);margin:6px 12px}
+.example-item{padding:7px 9px;border-radius:6px;cursor:pointer;transition:background .14s;margin-bottom:1px}
+.example-item:hover{background:var(--navy-800)}
+.example-title{font-size:11.5px;color:var(--slate-300)}
+.example-sub{font-size:9.5px;color:var(--slate-400);margin-top:1px}
+.sb-footer{margin-top:auto;padding:10px 12px;border-top:1px solid var(--border)}
+.model-row{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--slate-400);font-family:'DM Mono',monospace}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 5px var(--green)}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.chat-header{padding:11px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--navy-900);flex-shrink:0}
+.chat-title{font-size:14px;font-weight:500;color:var(--slate-200)}
+.chat-provider{font-family:'DM Mono',monospace;font-size:10px;padding:2px 7px;border-radius:4px;margin-left:auto}
+
+/* ── MESSAGES ── */
+.messages{flex:1;overflow-y:auto;padding:22px 22px 0;display:flex;flex-direction:column;gap:18px}
+.messages::-webkit-scrollbar{width:4px}
+.messages::-webkit-scrollbar-thumb{background:var(--navy-600);border-radius:4px}
+
+.msg-user{display:flex;justify-content:flex-end}
+.msg-user-bubble{max-width:70%;background:linear-gradient(135deg,var(--navy-700),var(--navy-600));border:1px solid var(--border-md);border-radius:13px 13px 4px 13px;padding:10px 14px;font-size:13.5px;line-height:1.55;color:var(--slate-200)}
+
+.msg-agent{display:flex;gap:10px;align-items:flex-start}
+.agent-av{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--accent-lo),var(--accent));display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:2px;box-shadow:0 0 10px rgba(59,130,246,.3)}
+.agent-body{flex:1;min-width:0}
+.agent-label{font-family:'DM Mono',monospace;font-size:10px;color:var(--accent-hi);letter-spacing:.7px;text-transform:uppercase;margin-bottom:5px}
+.agent-bubble{background:var(--navy-800);border:1px solid var(--border);border-radius:4px 13px 13px 13px;padding:12px 16px;font-size:13.5px;line-height:1.65;color:var(--slate-300)}
+
+.thinking{display:flex;gap:5px;align-items:center;padding:3px 0}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--accent-hi);animation:blink 1.2s ease-in-out infinite}
+.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ── DIAGRAM CARD ── */
+.diagram-card{margin-top:12px;border:1px solid var(--border-md);border-radius:10px;overflow:hidden}
+.dc-header{display:flex;align-items:center;gap:8px;padding:9px 13px;background:var(--navy-700);border-bottom:1px solid var(--border)}
+.dc-title{font-family:'DM Mono',monospace;font-size:11px;color:var(--slate-300);flex:1}
+.dc-pill{font-family:'DM Mono',monospace;font-size:9px;padding:2px 7px;border-radius:3px;font-weight:500}
+.dc-body{background:var(--navy-950);min-height:160px;overflow:auto;padding:16px;display:flex;align-items:flex-start;justify-content:center}
+.dc-footer{display:flex;align-items:center;gap:7px;padding:9px 13px;background:var(--navy-700);border-top:1px solid var(--border)}
+.dl-btn{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:5px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid;transition:all .18s;font-family:'DM Sans',sans-serif;background:none}
+.dl-svg{border-color:rgba(20,184,166,.3);color:var(--teal)}.dl-svg:hover{background:rgba(20,184,166,.1)}
+.dl-png{border-color:rgba(59,130,246,.3);color:var(--accent-hi)}.dl-png:hover{background:rgba(59,130,246,.1)}
+.dc-meta{margin-left:auto;font-family:'DM Mono',monospace;font-size:10px;color:var(--slate-400)}
+
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.chip{padding:4px 10px;border-radius:16px;font-size:11px;background:var(--navy-700);border:1px solid var(--border);color:var(--slate-400);cursor:pointer;transition:all .15s}
+.chip:hover{background:var(--navy-600);color:var(--slate-200);border-color:var(--border-md)}
+
+/* ── ERROR ── */
+.error-bubble{background:rgba(244,63,94,.08);border:1px solid rgba(244,63,94,.2);border-radius:4px 13px 13px 13px;padding:12px 16px;font-size:13px;color:#fca5a5;line-height:1.6}
+
+/* ── INPUT ── */
+.input-area{padding:14px 22px 18px;background:var(--navy-900);border-top:1px solid var(--border);flex-shrink:0}
+.input-wrap{background:var(--navy-800);border:1px solid var(--border-md);border-radius:10px;overflow:hidden;transition:border-color .2s}
+.input-wrap:focus-within{border-color:rgba(59,130,246,.45);box-shadow:0 0 0 3px rgba(59,130,246,.07)}
+textarea{width:100%;background:transparent;border:none;outline:none;color:var(--slate-200);font-size:13.5px;line-height:1.55;font-family:'DM Sans',sans-serif;padding:11px 14px;resize:none;min-height:56px;max-height:140px}
+textarea::placeholder{color:var(--slate-400)}
+.input-bottom{display:flex;align-items:center;gap:7px;padding:7px 10px;border-top:1px solid var(--border)}
+.send-btn{margin-left:auto;padding:7px 18px;background:linear-gradient(135deg,var(--accent-lo),var(--accent));border:none;border-radius:6px;color:#fff;font-size:12px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:5px;box-shadow:0 2px 8px rgba(59,130,246,.28)}
+.send-btn:hover{opacity:.9}.send-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── WELCOME ── */
+.welcome{text-align:center;padding:32px 20px;color:var(--slate-400)}
+.welcome h2{font-size:18px;font-weight:500;color:var(--slate-200);margin-bottom:8px}
+.welcome p{font-size:13px;line-height:1.65}
+</style>
+</head>
+<body style="display:flex;flex-direction:column;height:100%">
+
+<nav class="topnav">
+  <div class="logo"><div class="logo-icon">⬡</div><div class="logo-text">Arch<span>Agent</span></div></div>
+  <div class="nav-right">
+    <div class="badge">● LIVE</div>
+    <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--slate-400)">claude-sonnet-4-6</div>
+  </div>
+</nav>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sb-section">
+      <button class="new-btn" onclick="newChat()">＋ New Diagram</button>
+      <div class="sb-label">Provider</div>
+      <div class="prov-grid">
+        <button class="prov-btn auto active" onclick="setProvider('auto',this)">✦ Auto</button>
+        <button class="prov-btn aws" onclick="setProvider('aws',this)">☁ AWS</button>
+        <button class="prov-btn gcp" onclick="setProvider('gcp',this)">☁ GCP</button>
+        <button class="prov-btn azure" onclick="setProvider('azure',this)">🔷 Azure</button>
+      </div>
+    </div>
+
+    <div class="sb-divider"></div>
+
+    <div class="sb-section">
+      <div class="sb-label">Examples</div>
+      <div class="example-item" onclick="loadExample('Lambda, API Gateway, DynamoDB and S3 serverless API on AWS')">
+        <div class="example-title">⚡ Serverless API</div>
+        <div class="example-sub">Lambda · API Gateway · DynamoDB</div>
+      </div>
+      <div class="example-item" onclick="loadExample('ECS Fargate with RDS PostgreSQL, ElastiCache Redis, CloudFront CDN and S3 in a VPC with NAT gateway on AWS')">
+        <div class="example-title">🏗 ECS + RDS + Redis</div>
+        <div class="example-sub">Fargate · RDS · CloudFront</div>
+      </div>
+      <div class="example-item" onclick="loadExample('GKE microservices with Cloud SQL, Pub/Sub, Cloud CDN and Cloud Storage on GCP')">
+        <div class="example-title">☁ GKE Microservices</div>
+        <div class="example-sub">GKE · Cloud SQL · Pub/Sub</div>
+      </div>
+      <div class="example-item" onclick="loadExample('AKS cluster with Azure SQL, Cosmos DB, Service Bus, Azure CDN and Blob Storage')">
+        <div class="example-title">🔷 AKS + Cosmos DB</div>
+        <div class="example-sub">AKS · Cosmos DB · Service Bus</div>
+      </div>
+      <div class="example-item" onclick="loadExample('Multi-cloud data pipeline: AWS S3 and Kinesis ingestion, GCP BigQuery for analytics, Azure Data Factory for orchestration')">
+        <div class="example-title">🌐 Multi-cloud Pipeline</div>
+        <div class="example-sub">AWS · GCP · Azure</div>
+      </div>
+    </div>
+
+    <div class="sb-footer">
+      <div class="model-row"><span class="live-dot"></span> claude-sonnet-4-20250514</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="chat-header">
+      <div class="chat-title" id="chat-title">New conversation</div>
+      <div class="chat-provider dc-pill" id="chat-provider-badge" style="display:none"></div>
+    </div>
+
+    <div class="messages" id="messages">
+      <div class="welcome" id="welcome-msg">
+        <h2>⬡ Cloud Architecture Diagrams</h2>
+        <p>Describe any architecture in plain English.<br>
+        I'll generate a diagram with real AWS, GCP, and Azure icons — nodes, groups, and labeled edges.<br><br>
+        <span style="font-size:12px;opacity:.6">Pick an example from the sidebar or type below.</span></p>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="input-wrap">
+        <textarea id="user-input" placeholder="Describe your architecture… e.g. 'ECS Fargate with RDS, Redis and CloudFront'" rows="2"></textarea>
+        <div class="input-bottom">
+          <span style="font-size:11px;color:var(--slate-400);font-family:'DM Mono',monospace" id="char-count">0 / 2000</span>
+          <button class="send-btn" id="send-btn" onclick="sendMessage()">
+            Generate ➤
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ── State ───────────────────────────────────────────────────
+let provider = 'auto';
+let history = [];
+let diagCount = 0;
+
+// ── Icon map via thesvg CDN ──────────────────────────────────
+const ICONS = {
+  aws: {
+    'EC2':            'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/aws-ec2/default.svg',
+    'Lambda':         'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/aws-lambda/default.svg',
+    'S3':             'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/aws-s3/default.svg',
+    'RDS':            'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/aws-rds/default.svg',
+    'DynamoDB':       'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/aws-dynamodb/default.svg',
+    'CloudFront':     'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/aws-cloudfront/default.svg',
+    'API Gateway':    'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/aws-api-gateway/default.svg',
+    'ECS':            'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/aws-ecs/default.svg',
+    'EKS':            'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/aws-eks/default.svg',
+    'ElastiCache':    'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/aws-elasticache/default.svg',
+    'SQS':            'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/aws-sqs/default.svg',
+    'SNS':            'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/aws-sns/default.svg',
+    'Route 53':       'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/aws-route-53/default.svg',
+    'ALB':            'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/aws-elastic-load-balancing/default.svg',
+    'NAT Gateway':    'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/aws-nat-gateway/default.svg',
+    'IAM':            'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/aws-iam/default.svg',
+    'Cognito':        'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/aws-cognito/default.svg',
+    'Kinesis':        'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/aws-kinesis/default.svg',
+    'Secrets Manager':'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/aws-secrets-manager/default.svg',
+    'Fargate':        'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/aws-fargate/default.svg',
+    'User':           'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/aws-end-user/default.svg',
+  },
+  gcp: {
+    'Cloud Run':      'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/gcp-cloud-run/default.svg',
+    'Cloud Functions':'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/gcp-cloud-functions/default.svg',
+    'Cloud SQL':      'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/gcp-cloud-sql/default.svg',
+    'BigQuery':       'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/gcp-bigquery/default.svg',
+    'GKE':            'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/gcp-google-kubernetes-engine/default.svg',
+    'Cloud Storage':  'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/gcp-cloud-storage/default.svg',
+    'Pub/Sub':        'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/gcp-pubsub/default.svg',
+    'Cloud CDN':      'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/gcp-cloud-cdn/default.svg',
+    'Dataflow':       'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/gcp-dataflow/default.svg',
+    'Firestore':      'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/gcp-firestore/default.svg',
+    'Cloud Spanner':  'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/gcp-cloud-spanner/default.svg',
+  },
+  azure: {
+    'AKS':            'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/azure-kubernetes-service/default.svg',
+    'Azure SQL':      'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/azure-sql-database/default.svg',
+    'Azure CDN':      'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/azure-cdn-profiles/default.svg',
+    'Service Bus':    'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/azure-service-bus/default.svg',
+    'Blob Storage':   'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/azure-storage-accounts/default.svg',
+    'Functions':      'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/azure-function-apps/default.svg',
+    'Cosmos DB':      'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/azure-cosmos-db/default.svg',
+    'API Management': 'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/azure-api-management-services/default.svg',
+    'App Service':    'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/azure-app-services/default.svg',
+    'Azure Cache':    'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/azure-cache-redis/default.svg',
+    'Data Factory':   'https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/azure-data-factory/default.svg',
+  }
+};
+
+function getIcon(prov, label) {
+  const maps = prov === 'multi'
+    ? [...Object.values(ICONS.aws), ...Object.values(ICONS.gcp), ...Object.values(ICONS.azure)].reduce((a,v,i,arr)=>{
+        // flatten all maps together
+        return a;
+      }, {...ICONS.aws, ...ICONS.gcp, ...ICONS.azure})
+    : (ICONS[prov] || ICONS.aws);
+
+  const allMaps = {...ICONS.aws, ...ICONS.gcp, ...ICONS.azure};
+  const search = label.toLowerCase();
+  for (const [k,v] of Object.entries(allMaps)) {
+    if (search.includes(k.toLowerCase()) || k.toLowerCase().includes(search.replace(/aws |gcp |azure /,''))) return v;
+  }
+  // fallback: inline SVG placeholder
+  const initials = label.replace(/aws |gcp |azure /i,'').slice(0,3).toUpperCase();
+  return `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect width="40" height="40" rx="8" fill="#1e3257"/><text x="20" y="26" text-anchor="middle" font-size="11" fill="#60a5fa" font-family="sans-serif" font-weight="500">${initials}</text></svg>`)}`;
+}
+
+// ── SVG Renderer ─────────────────────────────────────────────
+function renderSVG(graph, prov) {
+  const nodes = graph.nodes || [];
+  const edges = graph.edges || [];
+  const groups = graph.groups || [];
+
+  const NW=90, NH=72, IS=36, PX=28, PY=24, GX=56, GY=44, GP=16;
+  const COLS=5;
+
+  // Assign group membership
+  const nodeGroup = {};
+  groups.forEach((g,gi) => (g.nodes||[]).forEach(id => nodeGroup[id]=gi));
+
+  // Layout rows: groups first, then ungrouped
+  const ungrouped = nodes.filter(n => nodeGroup[n.id] === undefined);
+  const rows = [];
+  groups.forEach((g,gi) => {
+    const gnodes = nodes.filter(n => nodeGroup[n.id]===gi);
+    if (gnodes.length) rows.push({type:'group', g, gi, gnodes});
+  });
+  if (ungrouped.length) rows.push({type:'free', gnodes:ungrouped});
+
+  let curY = PY, totalW = 0;
+  const rowMeta = rows.map(row => {
+    const cnt = row.gnodes.length;
+    const cols = Math.min(cnt, COLS);
+    const rrows = Math.ceil(cnt/cols);
+    const innerW = cols*NW + (cols-1)*GX;
+    const innerH = rrows*NH + (rrows-1)*GY;
+    const w = row.type==='group' ? innerW+GP*2 : innerW;
+    const h = row.type==='group' ? innerH+GP*2+16 : innerH;
+    totalW = Math.max(totalW, w+PX*2);
+    const y = curY;
+    curY += h+PY;
+    return {...row, w, h, y, cols, innerW, innerH};
+  });
+  const totalH = curY + PY/2;
+  totalW = Math.max(totalW, 300);
+
+  // Compute node positions
+  const pos = {};
+  rowMeta.forEach(row => {
+    const ox = PX + (row.type==='group' ? GP : 0);
+    const oy = row.y + (row.type==='group' ? GP+16 : 0);
+    row.gnodes.forEach((n,i) => {
+      const c = i%row.cols, r = Math.floor(i/row.cols);
+      const rowCnt = Math.ceil(row.gnodes.length/row.cols);
+      const inRow = r===rowCnt-1 ? row.gnodes.length-r*row.cols : row.cols;
+      const rowOx = ox + ((row.cols-inRow)*(NW+GX))/2;
+      pos[n.id] = { x: rowOx+c*(NW+GX)+NW/2, y: oy+r*(NH+GY)+NH/2 };
+    });
+  });
+
+  const GC=['rgba(59,130,246,.07)','rgba(20,184,166,.06)','rgba(245,158,11,.06)','rgba(139,92,246,.07)','rgba(244,63,94,.06)'];
+  const GS=['#3b82f6','#14b8a6','#f59e0b','#8b5cf6','#f43f5e'];
+
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${totalW}" height="${totalH}" viewBox="0 0 ${totalW} ${totalH}">`;
+  s += `<defs><marker id="ar" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#475569"/></marker></defs>`;
+  s += `<rect width="${totalW}" height="${totalH}" fill="#060d1f"/>`;
+
+  // Groups
+  rowMeta.filter(r=>r.type==='group').forEach(row => {
+    const ci = row.gi % GC.length;
+    s += `<rect x="${PX}" y="${row.y}" width="${row.w}" height="${row.h}" rx="10" fill="${GC[ci]}" stroke="${GS[ci]}" stroke-width="1" stroke-dasharray="5,4" opacity="0.9"/>`;
+    s += `<text x="${PX+10}" y="${row.y+12}" font-size="9.5" fill="${GS[ci]}" font-family="'DM Mono',monospace" opacity="0.85" letter-spacing="0.8">${(row.g.label||'').toUpperCase()}</text>`;
+  });
+
+  // Edges
+  edges.forEach(e => {
+    const f=pos[e.from], t=pos[e.to];
+    if (!f||!t) return;
+    const dx=t.x-f.x, dy=t.y-f.y, len=Math.sqrt(dx*dx+dy*dy)||1;
+    const nx=dx/len, ny=dy/len;
+    const x1=(f.x+nx*(IS/2+4)).toFixed(1), y1=(f.y+ny*(IS/2+4)).toFixed(1);
+    const x2=(t.x-nx*(IS/2+8)).toFixed(1), y2=(t.y-ny*(IS/2+8)).toFixed(1);
+    s += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#334155" stroke-width="1.5" marker-end="url(#ar)"/>`;
+    if (e.label) {
+      const mx=((+x1+ +x2)/2).toFixed(1), my=((+y1+ +y2)/2).toFixed(1);
+      s += `<rect x="${(mx-18).toFixed(1)}" y="${(my-7).toFixed(1)}" width="36" height="12" rx="3" fill="#0f1e38"/>`;
+      s += `<text x="${mx}" y="${(my+3).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#64748b" font-family="sans-serif">${e.label}</text>`;
+    }
+  });
+
+  // Nodes
+  nodes.forEach(n => {
+    const p=pos[n.id]; if(!p) return;
+    const icon = getIcon(prov, n.label||'');
+    const ix=(p.x-IS/2).toFixed(1), iy=(p.y-IS/2-8).toFixed(1);
+    s += `<image href="${icon}" x="${ix}" y="${iy}" width="${IS}" height="${IS}" preserveAspectRatio="xMidYMid meet"/>`;
+    const words=(n.label||'').split(' ');
+    const ly=(p.y+IS/2+3).toFixed(1);
+    if (words.length>2) {
+      const h=Math.ceil(words.length/2);
+      s += `<text x="${p.x.toFixed(1)}" y="${ly}" text-anchor="middle" font-size="9" fill="#94a3b8" font-family="'DM Sans',sans-serif">${words.slice(0,h).join(' ')}</text>`;
+      s += `<text x="${p.x.toFixed(1)}" y="${(p.y+IS/2+13).toFixed(1)}" text-anchor="middle" font-size="9" fill="#94a3b8" font-family="'DM Sans',sans-serif">${words.slice(h).join(' ')}</text>`;
+    } else {
+      s += `<text x="${p.x.toFixed(1)}" y="${ly}" text-anchor="middle" font-size="9" fill="#94a3b8" font-family="'DM Sans',sans-serif">${n.label||''}</text>`;
+    }
+  });
+
+  s += '</svg>';
+  return {svg:s, w:totalW, h:totalH};
+}
+
+// ── Provider pill colors ──────────────────────────────────────
+const PILL = {
+  aws:   'background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);color:#f59e0b',
+  gcp:   'background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.3);color:#60a5fa',
+  azure: 'background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.3);color:#14b8a6',
+  multi: 'background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);color:#a78bfa',
+};
+const PILL_LABEL = {aws:'AWS',gcp:'GCP',azure:'Azure',multi:'Multi-cloud'};
+
+// ── UI helpers ────────────────────────────────────────────────
+function setProvider(p, btn) {
+  provider = p;
+  document.querySelectorAll('.prov-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+
+function newChat() {
+  history = [];
+  document.getElementById('messages').innerHTML = '';
+  document.getElementById('welcome-msg') && document.getElementById('messages').appendChild(document.getElementById('welcome-msg'));
+  document.getElementById('chat-title').textContent = 'New conversation';
+  document.getElementById('chat-provider-badge').style.display = 'none';
+}
+
+function loadExample(q) {
+  document.getElementById('user-input').value = q;
+  sendMessage();
+}
+
+function scrollBottom() {
+  const m = document.getElementById('messages');
+  m.scrollTop = m.scrollHeight;
+}
+
+function appendUserMsg(text) {
+  const w = document.getElementById('welcome-msg');
+  if (w) w.remove();
+  const d = document.createElement('div');
+  d.className = 'msg-user';
+  d.innerHTML = `<div class="msg-user-bubble">${text.replace(/</g,'&lt;')}</div>`;
+  document.getElementById('messages').appendChild(d);
+  scrollBottom();
+}
+
+function appendThinking() {
+  const d = document.createElement('div');
+  d.className = 'msg-agent'; d.id = 'thinking';
+  d.innerHTML = `<div class="agent-av">⬡</div><div class="agent-body"><div class="agent-label">Arch Agent</div><div class="agent-bubble"><div class="thinking"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div></div>`;
+  document.getElementById('messages').appendChild(d);
+  scrollBottom();
+}
+function removeThinking() { const e=document.getElementById('thinking'); if(e) e.remove(); }
+
+function appendDiagram(summary, graph, prov, query) {
+  diagCount++;
+  const id = 'dg'+diagCount;
+  const {svg, w, h} = renderSVG(graph, prov);
+  const pill = PILL[prov]||PILL.aws;
+  const plabel = PILL_LABEL[prov]||'Cloud';
+  const nc=(graph.nodes||[]).length, ec=(graph.edges||[]).length;
+  const chips = (graph.followups||[]).map(f=>`<div class="chip" onclick="loadExample(this.dataset.q)" data-q="${f.replace(/"/g,'&quot;')}">${f}</div>`).join('');
+
+  const d = document.createElement('div');
+  d.className = 'msg-agent';
+  d.innerHTML = `
+    <div class="agent-av">⬡</div>
+    <div class="agent-body">
+      <div class="agent-label">Arch Agent</div>
+      <div class="agent-bubble">
+        ${summary ? `<div style="margin-bottom:10px;color:var(--slate-300);font-size:13px">${summary.replace(/</g,'&lt;')}</div>` : ''}
+        <div class="diagram-card">
+          <div class="dc-header">
+            <div class="dc-title">${query.slice(0,48)}${query.length>48?'…':''}</div>
+            <span class="dc-pill" style="${pill}">${plabel}</span>
+          </div>
+          <div class="dc-body" id="${id}-body">${svg}</div>
+          <div class="dc-footer">
+            <button class="dl-btn dl-svg" onclick="dlSVG('${id}')">↓ SVG</button>
+            <button class="dl-btn dl-png" onclick="dlPNG('${id}')">↓ PNG</button>
+            <span class="dc-meta">${nc} nodes · ${ec} edges</span>
+          </div>
+        </div>
+        ${chips ? `<div class="chips">${chips}</div>` : ''}
+      </div>
+    </div>`;
+  document.getElementById('messages').appendChild(d);
+
+  // store svg for downloads
+  window['__svg_'+id] = svg;
+  scrollBottom();
+
+  // update header
+  document.getElementById('chat-title').textContent = query.slice(0,40)+(query.length>40?'…':'');
+  const badge = document.getElementById('chat-provider-badge');
+  badge.style = `display:inline-block;${pill};font-family:'DM Mono',monospace;font-size:10px;padding:2px 8px;border-radius:4px;font-weight:500`;
+  badge.textContent = plabel;
+}
+
+function appendError(msg) {
+  const d = document.createElement('div');
+  d.className = 'msg-agent';
+  d.innerHTML = `<div class="agent-av">⬡</div><div class="agent-body"><div class="agent-label">Arch Agent</div><div class="error-bubble">${msg.replace(/</g,'&lt;')}</div></div>`;
+  document.getElementById('messages').appendChild(d);
+  scrollBottom();
+}
+
+function dlSVG(id) {
+  const blob = new Blob([window['__svg_'+id]||''], {type:'image/svg+xml'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='arch-diagram.svg'; a.click();
+}
+function dlPNG(id) {
+  const svgEl = document.querySelector(`#${id}-body svg`);
+  if (!svgEl) return;
+  const svgStr = new XMLSerializer().serializeToString(svgEl);
+  const W=svgEl.getAttribute('width')||600, H=svgEl.getAttribute('height')||400;
+  const canvas=document.createElement('canvas'); canvas.width=W*2; canvas.height=H*2;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#060d1f'; ctx.fillRect(0,0,W*2,H*2);
+  const img=new Image();
+  img.onload=()=>{ctx.scale(2,2);ctx.drawImage(img,0,0);canvas.toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='arch-diagram.png';a.click();});};
+  img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svgStr);
+}
+
+// ── System prompt ─────────────────────────────────────────────
+const SYSTEM = `You are a cloud architecture diagram expert. Respond ONLY with a raw JSON object (no markdown, no backticks, no explanation). Use this exact schema:
+{
+  "summary": "One clear sentence describing the architecture.",
+  "provider": "aws" | "gcp" | "azure" | "multi",
+  "nodes": [
+    { "id": "u1", "label": "User" },
+    { "id": "n1", "label": "CloudFront" },
+    { "id": "n2", "label": "ALB" },
+    { "id": "n3", "label": "ECS Fargate" },
+    { "id": "n4", "label": "RDS" }
+  ],
+  "edges": [
+    { "from": "u1", "to": "n1", "label": "HTTPS" },
+    { "from": "n1", "to": "n2", "label": "" },
+    { "from": "n2", "to": "n3", "label": "route" },
+    { "from": "n3", "to": "n4", "label": "5432" }
+  ],
+  "groups": [
+    { "label": "Public Subnet", "nodes": ["n1","n2"] },
+    { "label": "Private Subnet", "nodes": ["n3","n4"] }
+  ],
+  "followups": ["Add ElastiCache Redis", "Add WAF protection", "Add CI/CD pipeline"]
+}
+
+RULES:
+- Always start with a "User" node as the entry point.
+- Use exact official service names: "Lambda", "ECS Fargate", "RDS", "Cloud Run", "BigQuery", "AKS", etc.
+- For multi-cloud, prefix with provider: "AWS S3", "GCP BigQuery", "Azure Data Factory".
+- groups = VPCs, subnets, regions, or logical zones. Always use 2-4 groups minimum.
+- followups = 3 short refinement suggestions (no punctuation).
+- Keep to 5-12 nodes. Every node must appear in at least one edge.
+- Output ONLY the JSON. Zero other text.`;
+
+// ── Main send ─────────────────────────────────────────────────
+async function sendMessage() {
+  const input = document.getElementById('user-input');
+  const query = input.value.trim();
+  if (!query || document.getElementById('send-btn').disabled) return;
+  input.value=''; updateCharCount();
+  document.getElementById('send-btn').disabled = true;
+
+  appendUserMsg(query);
+  appendThinking();
+  history.push({role:'user', content: query});
+
+  try {
+    const res = await fetch('/api/chat', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1200,
+        system: SYSTEM,
+        messages: history,
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || `HTTP ${res.status}`);
+
+    const raw = (data.content||[]).map(b=>b.text||'').join('').trim();
+    history.push({role:'assistant', content:raw});
+    removeThinking();
+
+    let parsed;
+    try {
+      parsed = JSON.parse(raw.replace(/^```[a-z]*\n?/,'').replace(/```$/,'').trim());
+    } catch {
+      appendError('Could not parse diagram JSON. Try rephrasing your description.');
+      document.getElementById('send-btn').disabled=false;
+      return;
+    }
+
+    const detectedProv = provider!=='auto' ? provider : (parsed.provider||'aws');
+    appendDiagram(parsed.summary||'', parsed, detectedProv, query);
+
+  } catch(err) {
+    removeThinking();
+    appendError(`Error: ${err.message}`);
+  }
+  document.getElementById('send-btn').disabled=false;
+}
+
+function updateCharCount() {
+  const v = document.getElementById('user-input').value;
+  document.getElementById('char-count').textContent = `${v.length} / 2000`;
+}
+document.getElementById('user-input').addEventListener('input', updateCharCount);
+document.getElementById('user-input').addEventListener('keydown', e => {
+  if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+</script>
+</body>
+</html>
