@@ -2,7 +2,7 @@
 
 A cloud architecture diagram assistant powered by the Claude API. Describe your infrastructure in plain English and get interactive architecture diagrams instantly.
 
-![Project Screenshot](asset/screenshot.png)
+![Project Screenshot](assets/screenshot.png)
 
 ## Features
 
